@@ -85,6 +85,13 @@ static const rb_data_type_t ossl_sslctx_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
+static void client_keylog_callback(const SSL *ssl, const char *line)
+{
+    FILE *fp = fopen("key.log", "a+");
+    fprintf(fp, "%s\n", line);
+    fclose(fp);
+}
+
 static VALUE
 ossl_sslctx_s_alloc(VALUE klass)
 {
@@ -107,6 +114,8 @@ ossl_sslctx_s_alloc(VALUE klass)
     SSL_CTX_set_mode(ctx, mode);
     RTYPEDDATA_DATA(obj) = ctx;
     SSL_CTX_set_ex_data(ctx, ossl_sslctx_ex_ptr_idx, (void *)obj);
+
+    SSL_CTX_set_keylog_callback(ctx, client_keylog_callback);
 
 #if !defined(OPENSSL_NO_EC) && defined(HAVE_SSL_CTX_SET_ECDH_AUTO)
     /* We use SSL_CTX_set1_curves_list() to specify the curve used in ECDH. It
